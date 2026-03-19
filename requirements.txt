@@ -1,0 +1,8 @@
+torch
+transformers
+vllm
+deepspeed
+datasets
+evaluate
+accelerate
+scikit-learn
