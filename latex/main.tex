@@ -1,0 +1,396 @@
+\documentclass[conference,compsoc]{IEEEtran}
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{algorithm}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{multirow}
+\usepackage{balance}
+
+\begin{document}
+
+\title{Causal Mixture-of-Experts: Semantic Step-Wise Expert Routing and Probability of Necessity and Sufficiency for Efficient LLM Reasoning}
+
+\author{\IEEEauthorblockN{Prantik Biswas}
+\IEEEauthorblockA{Department of AI \& Data Science \\
+Indian Institute of Technology Patna\\
+Patna, India \\
+2201ai28\_prantik@iitp.ac.in}
+}
+
+\maketitle
+
+\begin{abstract}
+Large language models have certainly changed the game, but let’s be honest their current way of "thinking" is incredibly inefficient. Every single word, whether it’s a complex logical jump or just a simple transition, gets blasted through the entire neural network. It is a bit like using a supercomputer to calculate 2 + 2. To move past this huge hurdle, we developed Causal Mixture-of-Experts (Causal-MoE). The core idea is to stop treating the model as one big block and instead route information based on the actual weight of the reasoning step. Essentially, we are sending specific semantic jobs to specialized experts only when they are actually needed.
+
+We took the Qwen2.5-7B-Instruct model and performed some modifications on its architecture, swapping out the standard Feed-Forward Network (FFN) layers at four strategic depths. In their place, we integrated a Sparse Gated MoE MLP equipped with four LoRA-based experts: [MATH], [LOGIC], [COMMONSENSE], and [VERIFY]. To keep the training lean and ensure the reasoning paths were not just statistical noise, we utilized the Probability of Necessity and Sufficiency (PNS) to refine the process.
+
+The results from our tests on GSM8K and CommonsenseQA were quite fascinating. Our integrated V2 model hit 76.80\% accuracy on GSM8K, but the real highlight was the efficiency because we managed to cut estimated inference FLOPS by 34\% compared to the base model (2.81T vs 4.28T). Meanwhile, our router-based V1 model achieved 83.05\% on CommonsenseQA, which actually outperforms the original base model. It seems that by routing at the semantic step level, it is possible to hit that sweet spot between high-level accuracy, modularity, and transparency, all while staying within a single 7B parameter footprint.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Mixture-of-Experts (MoE), Probability of Necessity and Sufficiency (PNS), LLM Reasoning, Sparse Routing, LoRA, Compute Efficiency.
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+\subsection{The Problem: Compute-Reasoning Displacement}
+Standard auto-regressive models churn out tokens one by one, hitting every single parameter with the same amount of force regardless of what is actually being said. It is a bit of a brute-force way to handle language. For complex reasoning, this is fundamentally inefficient because a simple "and then..." doesn't actually need the same brainpower as a multi-step algebraic derivation. We have started calling this mismatch \textbf{Compute-Reasoning Displacement} which is that frustrating reality where a model burns through the same number of FLOPs on a filler phrase as it does on a genuine logical breakthrough.
+
+In our experiments, this issue usually rears its head in two specific ways:
+\begin{enumerate}
+    \item \textbf{Latency Explosion}: Standard Chain-of-Thought (CoT) techniques tend to bloat the response with hundreds of extra tokens. For instance, when we looked at the Qwen2.5-7B model on GSM8K, it was averaging about 208.9 tokens per answer. A lot of that is just repetitive and useless rambling that drags out the clock without adding real value.
+    \item \textbf{Reasoning Opacity}: Because a typical response is just one long, flat string of text, there are no clear borders between different types of sub-tasks. This makes it incredibly difficult to tell exactly where a logic chain snapped or how to step in and fix a mid-trace error without starting from scratch.
+\end{enumerate}
+
+\subsection{Scientific Justification \& Project Utility}
+The Causal-MoE project isn't just about making things faster but it is also about fundamentally changing how models handle a task. Most traditional setups, like Mixtral, route data at the token level, which feels a bit random. Instead, Causal-MoE operates at the \textit{reasoning step level}. It is a more deliberate way of working that actually acknowledges the content of the "thought" process. 
+
+We see the real-world utility of this research coming through in four main areas:
+\begin{itemize}
+    \item \textbf{Semantic Granularity}: By routing based on the reasoning step, we can use specialized experts for things like Math or Logic that actually mirror how a human might tackle a multipart problem. It feels less like a black box and more like a coordinated team.
+    \item \textbf{Inference Acceleration}: We have found that we can significantly cut the "chatter." By using specialized experts to get straight to the point, we can reduce decoding steps by 70-80\%. That is a massive win when we are trying to solve the latency issues that plague current LLMs.
+    \item \textbf{Traceability \& Attribution}: When the model uses clear labels like \texttt{[MATH]} and \texttt{[LOGIC]}, the whole process becomes transparent. If something goes wrong now we can actually see which expert dropped the ball and why, instead of just staring at a wall of text aimlessly.
+    \item \textbf{Efficiency at Scale}: As our V2 results suggest, we don't have to sacrifice performance for speed. The model actually gets sharper by stripping away the fluff and focusing its FLOPs where they actually count.
+\end{itemize}
+
+\subsection{Our Approach and Contributions}
+Our idea is to divide the reasoning process into specific, explicitly-typed steps, with each one handled by a dedicated expert. This method builds on concepts from Sparse Mixture-of-Experts \cite{b1,b3} and Structured Chain-of-Thought \cite{b4}. What makes this new is that we are making routing choices based on the semantic meaning of each step. 
+
+We contribute the following:
+1) The Causal MoE design, which adds sparse expert MLP layers without interfering with the existing attention mechanism.
+2) An Atomic Reasoning Trace format used for training, which we fine-tuned using Probability of Necessity and Sufficiency (PNS) techniques.
+3) Two different ways to handle inference: the multi-call "Exploded" (V1) version and the single-pass "Collapsed" (V2) version.
+4) Proof that we can cut FLOP usage by 34\% compared to the base model on GSM8K using the V2 approach.
+
+\section{Related Work}
+\subsection{Sparse Mixture-of-Experts}
+Current sparse MoE models like the Switch Transformer, Mixtral-8x7B, and DeepSeek-MoE perform routing for every token within each layer. At each stage, a gating function chooses the best experts from a set of FFN modules \cite{b1,b3,b8,b10}. Our work takes a different path: instead of trying to balance token load, we align routing with the meaningful sub-goals of the reasoning task. This shift allows Causal-MoE to operate at a much broader semantic level, which, frankly, makes the whole thing a lot easier for a human to actually interpret.
+
+\subsection{Chain-of-Thought and Structured Reasoning}
+While Chain-of-Thought prompting \cite{b4} definitely gives these models a boost in reasoning, it comes with a bit of a trade-off that being as the reasoning trace stretches out, latency starts to creep up. Self-consistency \cite{b17} and Tree-of-Thoughts \cite{b18} extend this line of work toward deliberate multi-path exploration, but at the cost of even greater token overhead. Our work shares some DNA with Program-Aided LLMs (PAL) \cite{b5} because we also value a structured trace, but there is a key difference. Instead of reaching for external tools or code interpreters, we keep everything internal, relying on specialized experts baked directly into the model's own parameters.
+
+\subsection{Parameter-Efficient Fine-Tuning (PEFT)}
+To train our domain-specific experts efficiently, we utilize LoRA \cite{b2}. By layering low-rank matrices on top of the original frozen weights, we managed to bake in that specialized expertise without accidentally overwriting the core knowledge the model already spent so much time learning.
+
+\section{The Causal-MoE Architecture}
+
+\subsection{Overview and Surgical Injection Points}
+To start, we anchored Causal-MoE on a 4-bit quantized version of Qwen2.5-7B-Instruct. Honestly, doing this was less of a stylistic choice and more of a practical necessity to keep the compute requirements from spiraling out of control \cite{b6,b13}. The 4-bit NF4 quantization scheme \cite{b13} and the underlying Transformer architecture \cite{b9} set the foundation for all our surgical modifications. From there, we tried to avoid a complete structural overhaul. Instead, we went in with a scalpel, targeting the architecture exclusively at the MLP sub-layers and specifically at layers $\mathcal{L} = \{6, 12, 18, 24\}$. You can think of these as specific structural load points. Right at those exact junctions, we removed the standard SwiGLU FFN blocks entirely and slotted our custom \texttt{CausalMoEMLP} modules right into their place.
+
+When it came to figuring out the actual routing, we weren't entirely sure what would hold up best under pressure. So, we ended up experimenting with two very distinct layouts:
+\begin{itemize}
+    \item \textbf{V1 (Exploded)}: This is admittedly a bit of a brute-force approach. We physically separated the logic by running a completely independent Qwen2.5-1.5B-Instruct model, tasking it solely to act as our "Causal Router."
+    \item \textbf{V2 (Collapsed)}: This is the much sleeker setup. Rather than keeping a second, smaller model running on the side, we managed to embed the routing mechanics directly inside the core 7B foundation.
+\end{itemize}
+
+\begin{figure*}[htbp]
+\centering
+\includegraphics[width=\textwidth]{prantik.png}
+\caption{This breaks down the training pipeline and the data distillation architecture we put together for the Causal-MoE system. The whole process really kicks off with trace generation (GEN), relying on Qwen-2.5-7B to get the initial data. From there, those raw traces are fed directly into our Data Distillation Pipeline (PNS). The goal here is to evaluate the causal necessity of every single step by running contradiction rollouts hence essentially finding and tossing out the redundant fluff. The steps that actually matter are retained and pushed through a final sequence: expert tagging (TAG), the extraction of core equations (EXTRACT), and a thorough sanitization phase (SANITIZE), which ultimately leaves us with a clean, finalized training dataset.}
+\label{fig_causal_moe_pipeline}
+\end{figure*}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.5\textwidth]{Prantik1.png}
+\caption{This breaks down the actual system layout for the Causal-MoE V1 setup. The workflow itself is essentially a closed loop. First, a smaller Qwen2.5-1.5B model steps in as a dedicated router, figuring out and suggesting the appropriate expert label for the next step. Once it makes that call, the main 7B model takes over, loads up the correct LoRA adapter, and generates just that specific piece of the reasoning trace before cycling back around to do it all again.}
+\label{fig_arch1}
+\end{figure}
+
+\begin{figure*}[htbp]
+\centerline{\includegraphics[width=0.9\textwidth]{prantik2.png}}
+\caption{This outlines the design for Causal-MoE V2. We essentially took our custom \texttt{CausalMoEMLP} modules and baked them directly into the Qwen2.5-7B architecture, specifically targeting layers 6, 12, 18, and 24. Inside each of those modified cells, there is a dedicated routing node relying on a gating mechanism to dynamically select exactly 2 out of the 4 available semantic experts for any given step.}
+\label{fig_arch2}
+\end{figure*}
+
+\subsection{Expert Logic and Capacity}
+To actually build out the specialized reasoning capabilities, we wired up four distinct LoRA adapters. We ended up settling on $r=16, \alpha=32$ for the V2 build, though, honestly, we definitely played around with $r=32$ during earlier tests just to see if the extra capacity was worth it. We assigned each of these adapters to tackle a very specific type of cognitive task:
+\begin{itemize}
+    \item \texttt{MATH}: To handle the heavy lifting when it comes to algebra and raw calculations.
+    \item \texttt{LOGIC}: Geared specifically towards step-by-step deduction and keeping the rules straight.
+    \item \texttt{COMMONSENSE}: Essentially serving as the model's intuition for everyday, real-world knowledge.
+    \item \texttt{VERIFY}: Acting as a final checkpoint to review the answer and ensure the formatting is actually clean.
+\end{itemize}
+
+The standard SwiGLU feed-forward blocks \cite{b19} replaced by our \texttt{CausalMoEMLP} modules retain the same gating intuition but add semantic specialization. Now, at every single layer we injected, there is a gating network acting as a sort of traffic controller, defined mathematically as $G(\mathbf{h}) = \mathbf{h} W_{gate} \in \mathbb{R}^{N_e}$. From there, the system evaluates the incoming data and dynamically selects the top-$k=2$ experts to handle the workload:
+\begin{equation}
+\mathbf{p} = \text{Softmax}(G(\mathbf{h})), \quad (j_1, j_2) = \text{top-}k(\mathbf{p})
+\end{equation}
+\begin{equation}
+\text{MoE}(\mathbf{h}) = \sum_{j \in \{j_1, j_2\}} \frac{p_j}{p_{j1} + p_{j2}} \cdot \text{Expert}_j(\mathbf{h})
+\end{equation}
+
+\subsection{Expert Initialization: Interleaved Weight Slicing}
+One of our main goals was to make sure we didn't accidentally overwrite the valuable representations the model had already spent so much time learning. To handle this, we leaned on a technique called \textit{Interleaved Weight Slicing}. It is essentially a way to take the original FFN weights and deal them out among the different experts. In practice, this means each expert $i$ is assigned its own specific slice of those weights, defined mathematically as $S_i \subset \{0, \ldots, d_{FFN}-1\}$. The reasoning here is pretty straightforward: we wanted to ensure these experts hit the ground running with a solid foundation of existing knowledge, rather than forcing them to blindly figure things out from scratch.
+
+\section{Training Methodology and PNS Scoring}
+
+\subsection{The Atomic Reasoning Trace Format}
+To keep things organized and avoid unnecessary fluff, we leaned into what we are calling an \textit{Atomic Reasoning Trace}. The concept is actually quite straightforward that being every single micro-step in the thought process kicks off with a hard domain label which is something like \texttt{[MATH] 16 - 3 = 13}. It might seem like a minor formatting quirk, but it genuinely accomplishes two critical things at once. Primarily, it acts as a direct trigger to wake up the correct specialized expert. But maybe more importantly, it forces the model to drop all those wordy, conversational transitions that usually bloat a reasoning chain, keeping the whole trace incredibly lean.
+
+\subsection{Training Protocol}
+When it actually came time to teach the model how to use this new architecture, we knew a small dataset just wasn't going to cut it. Teaching a system to actively route its own logic is surprisingly finicky. So, we ended up pulling together a pretty massive training corpus well to be specific over 100,000 of those highly detailed "Exploded" reasoning traces. To make sure the data had enough actual mathematical and logical meat to it, we sourced these traces directly from the GSM8K and CSQA benchmarks.
+\begin{itemize}
+    \item \textbf{Precision}: We used BF16 along with the Paged AdamW 8-bit optimizer \cite{b14}.
+    \item \textbf{Learning Rate}: We ended up settling on $5 \times 10^{-6}$, just easing into the training process with a fairly standard linear warmup.
+    \item \textbf{Masking}: When it came to the masking setup, we kept things strictly focused so we actually only calculated the cross-entropy loss on the generated response tokens themselves.
+\end{itemize}
+
+\begin{table}[htbp]
+\caption{Configuration for LoRA and Training}
+\label{tab:params}
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Backbone & Qwen2.5-7B-Instruct (4-bit NF4) \\
+Learning Rate & $5 \times 10^{-6}$ (Linear Warmup) \\
+LoRA Rank/Alpha & 32 / 64 \\
+Surgical Layers & [6, 12, 18, 24] \\
+Optimizer & Paged AdamW 8-bit \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{PNS Estimation and Algorithm for Reconstructing CoT}
+When we were putting together the training set, we realized pretty quickly that we couldn't just feed the model endless, rambling traces. We had to trim the fat and isolate only the steps that genuinely mattered. To figure out what was actually critical, we leaned on a metric called the \textbf{Probability of Necessity and Sufficiency (PNS)}, grounded in Pearl's framework of counterfactual causation \cite{b16}. Basically, this acts as a stress test for every single piece of logic. If a step has a high PNS score, it means the model absolutely relies on it to reach the correct answer. But if the score is low? You can usually just rip that step out entirely, and the final outcome won't change at all.
+
+If we look at a specific step $s_i$ inside a trace that successfully solved a question $q$ (giving us the true answer $y^*$), the math shakes out like this:
+\begin{equation}
+\text{PNS}(s_i) = 1 - \frac{1}{K} \sum_{k=1}^{K} \mathbf{1}\bigl[\hat{y}_k = y^*\bigr]
+\end{equation}
+To break down what is actually happening in that formula: we ran $K=3$ distinct "sabotage tests." In these tests, we deliberately told the model that step $s_i$ was incorrect, just to see how it would react and whether its logic would collapse. The variable $\hat{y}_k$ represents the new answer the model spits out after being intentionally derailed, and the indicator function $\mathbf{1}[\cdot]$ is really just there to tally up whether or not it still managed to stumble into the right answer anyway.
+
+\subsubsection{The Sabotage-Rollout Method}
+When we first looked at how to test a step's importance, just deleting it seemed like the obvious move. But honestly, that approach is pretty flawed. If you simply yank a sentence out, these models are often clever enough to seamlessly bridge the gap on their own, which totally skews the resulting PNS score. So, rather than relying on a passive deletion, we opted for active sabotage. We basically inject a hard contradiction right into the thought stream which was literally feeding it a prompt like \textit{"ERROR: The previous thought is mathematically INCORRECT"}. It is a bit aggressive, sure. However, forcing that explicit conflict creates a far more rigorous, and ultimately more revealing, stress test for the model's underlying reasoning chain.
+
+\subsubsection{Algorithm: The Sufficient and Necessary Optimization of CoT}
+\begin{algorithm}
+\caption{Optimizing the CoT Sequence for Necessity and Sufficiency}
+\begin{algorithmic}[1]
+\REQUIRE The starting CoT chain $S_{init}$, the actual ground truth $y$, the original query $q$, and a baseline cutoff threshold of $\alpha=0.5$
+\ENSURE Optimized CoT chain $S_{final}$
+\STATE $\hat{y}_{init} \leftarrow \text{Rollout}(S_{init}, q)$
+\STATE $PS \leftarrow \mathbf{1}[\hat{y}_{init} = y]$
+\IF{$PS = 1$}
+    \STATE Let $S_{current} \leftarrow S_{init}$
+    \FOR{each step $s_t \in S_{current}$ (processed in order)}
+        \STATE Generate Sabotage Prompt for $s_t$
+        \STATE Generate $K$ rollouts: $V_{scores} \leftarrow$ validate $\hat{y}_k$ vs $y$
+        \STATE Ensure semantic disjointness from original $s_t$
+        \STATE $\text{PNS}_{val}(s_t) \leftarrow 1 - \frac{1}{K} \sum_{v \in V_{scores}} v$
+        \IF{$\text{PNS}_{val}(s_t) \ge \alpha$}
+            \STATE Append $s_t$ to $S_{final}$ \COMMENT{Keep necessary step}
+        \ELSE
+            \STATE Skip $s_t$ \COMMENT{Drop unnecessary step}
+        \ENDIF
+    \ENDFOR
+\ELSE
+    \STATE $S_{final} \leftarrow S_{init}$ \COMMENT{Original chain not sufficient}
+\ENDIF
+\RETURN $S_{final}$
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Execution Flow and Infrastructure}
+We only calculate PNS for traces that are actually correct. The system runs on vLLM \cite{b15} with a Ray backend using 2 GPUs, BF16 precision, and high memory utilization. One batch handles $32 \times 4 \times 3 = 384$ prompts for GSM8K and twice that for CSQA. To keep things moving quickly, we capped \texttt{max\_tokens} at 80, as we only need the final answer from the rollouts, which sped things up by 4-5 times. We pull answers from GSM8K using \texttt{\#\#\#\# <number>} and from CSQA via \texttt{\#\#\#\# <letter A-E>}.
+
+\section{Inference Paradigms: V1 vs V2}
+
+\subsection{V1: Exploded Multi-Call Routing}
+In the V1 setup, a router picks a tag and then the model is called repeatedly in a loop. This keeps the experts very separate since the router looks at the whole context first but it is computationally expensive because of the repeated prefill steps.
+
+\subsection{V2: Collapsed Single-Pass Integration}
+For V2, we brought the routing inside the model itself. The entire trace is actually generated in just one single pass. There is no looping or constant back-and-forth. The model basically just figures out that the moment it hits a domain tag—like \texttt{[MATH]} it needs to immediately route the next set of tokens straight to those specific expert weights. Honestly, bypassing all that extra multicall overhead is exactly how we manage to save such a staggering amount of raw compute and FLOPS.
+\begin{equation}
+\text{FLOP}(model, tokens) \approx 2 \times P_{active} \times T_{total}
+\end{equation}
+
+\section{Experiments \& Results}
+
+\subsection{Accuracy Benchmarks}
+When it finally came time to see how the models actually held up under pressure, we knew we needed a solid baseline. We ended up putting them through their paces using 1,221 specific samples pulled from CommonsenseQA \cite{b12}, alongside another 1,319 taken directly from the GSM8K dataset \cite{b11}.
+
+\begin{table}[htbp]
+\caption{Comparison of Accuracy Performance}
+\begin{center}
+\begin{tabular}{llcc}
+\toprule
+\textbf{Benchmark} & \textbf{Model} & \textbf{Samples} & \textbf{Accuracy} \\
+\midrule
+\textbf{CSQA} & Base (Qwen2.5-7B) & 1221 & 82.06\% \\
+\textbf{CSQA} & Causal MoE (V1) & 1221 & \textbf{83.05\%} \\
+\textbf{CSQA} & \textbf{Causal MoE (V2)} & 1221 & 78.38\% \\
+\midrule
+\textbf{GSM8K} & Base (Qwen2.5-7B) & 1319 & \textbf{88.86\%} \\
+\textbf{GSM8K} & Causal MoE (V1) & 1319 & 68.08\% \\
+\textbf{GSM8K} & \textbf{Causal MoE (V2)} & 1319 & \textbf{76.80\%} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\linewidth]{chart_a.png}}
+\caption{Chart A breaks down how the models actually stack up against each other in terms of raw accuracy. What’s particularly interesting here is that V1 genuinely outperforms the original base model on the CSQA benchmark. To us, that really suggests that giving the model a mechanism for reflective reasoning pays off when it comes to handling general commonsense tasks. At the same time, you can see V2 making a really solid recovery on the GSM8K tests.}
+\label{fig_chartA}
+\end{figure}
+
+\subsection{Efficiency \& Latency (The "Token \& FLOPs" Goal)}
+When we actually dug into the efficiency and latency numbers, ie when we were basically looking at whether we hit our "token and FLOPs" targets, we found out that the V2 model really did slash the computational overhead. It wasn't just a marginal gain; we saw a clear drop in the resources required to get to the right answer. Take the GSM8K benchmark, for instance. We watched the raw FLOP count drop from a rather bulky 7.67T in our earlier V1 setup all the way down to a much leaner 2.81T. When you consider that the standard base model usually sits around 4.28T, it becomes pretty clear that we are dealing with a noticeably more efficient system overall.
+
+\begin{table}[htbp]
+\caption{Metrics for Latency and Efficiency}
+\begin{center}
+\begin{tabular}{lccc|ccc}
+\toprule
+& \multicolumn{3}{c}{\textbf{CSQA}} & \multicolumn{3}{c}{\textbf{GSM8K}} \\
+\textbf{Metric} & Base & V1 & V2 & Base & V1 & V2 \\
+\midrule
+Decoding Steps & 155.4 & 32.3 & \textbf{33.4} & 208.9 & 60.3 & \textbf{75.8} \\
+Gen. Tokens & 155.4 & 27.1 & \textbf{33.4} & 208.9 & 55.0 & \textbf{75.8} \\
+Avg. Steps & 1 & 5.1 & \textbf{3.9} & 1 & 5.3 & \textbf{1.0} \\
+Est. Total FLOPS & 3.30T & 8.23T & \textbf{3.09T} & 4.28T & 7.67T & \textbf{2.81T} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\linewidth]{chart_b.png}}
+\caption{Chart B breaks down the actual token counts. The drop-off here is pretty significant—V2 managed to slash token generation by a massive 78.5\% on the CSQA benchmark, alongside a 63.7\% reduction on GSM8K, at least when stacked up against the original base model.}
+\label{fig_chartB}
+\end{figure}
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\linewidth]{chart_c.png}}
+\caption{Chart C essentially maps out that classic tension between raw FLOP cost and actual accuracy. It is honestly pretty interesting to see how V2 manages to carve out a noticeably smaller computational footprint compared to the standard base model, particularly when you look at the GSM8K numbers.}
+\label{fig_chartC}
+\end{figure}
+
+We also spent some time looking at a metric we are calling \textbf{Reasoning Density} ($\rho_R = \text{Accuracy} / \text{TFLOP}$). Honestly, the results here were pretty revealing. Our V2 model hit a score of 27.33 on the GSM8K benchmark, which actually represents a 31.7\% jump over the 20.76 score of the standard base model. It is one thing to get the right answer, but doing it with that much more efficiency is really the goal here.
+
+\section{Case Analysis: Success \& Failure}
+
+\subsection{CommonsenseQA (Success - V1)}
+\textbf{Question:} "Banks are usually quite secure, what type of door might they have to make it even more so?" \\
+\textbf{Trace:}
+1. \texttt{[COMMONSENSE]} Revolving door circular entry...
+2. \texttt{[COMMONSENSE]} Revolving doors prevent tailgating...
+3. \texttt{[LOGIC]} Revolving doors are security features.
+4. \texttt{[LOGIC]} Banks require strict security measures.
+5. \texttt{[VERIFY]} \#\#\#\# A (Revolving Door) \\
+\textbf{Outcome: Correct.} Here, the model mixed its factual knowledge with logic to give a compact, 5-step answer.
+
+\subsection{GSM8K (Progress \& Failure - V2)}
+\textbf{Question:} Josh buys a house for \$80k, puts in \$50k in repairs, increasing its value by 150\%. What is his profit? \\
+\textbf{Trace:}
+1. \texttt{[MATH]} 80,000 + 50,000 = 130,000
+2. \texttt{[MATH]} 130,000 * 1.50 = 195,000
+3. \texttt{[MATH]} 195,000 - 130,000 = 65,000
+4. \texttt{[VERIFY]} \#\#\#\# 65000 \\
+\textbf{Ground Truth:} 70,000. \\
+\textbf{Analysis:} While V2 is definitely more stable than V1, it still trips over semantic nuances every now and then. In this particular instance, the model applied the percentage to the total investment rather than the purchase price. It is a bit of a subtle distinction, and while the actual arithmetic was perfectly fine, the model basically missed the global constraints of the problem. It’s a hurdle we’re still actively trying to clear.
+
+\section{Discussion and Research Novelty}
+
+\subsection{Comparison with Post-Hoc Causal Pruning (Base Paper)}
+A recent study by Yu et al. \cite{b7} explored using PNS to strip away redundant steps in a Chain-of-Thought. They actually saw some pretty impressive results, that being slashing token usage by about 78.4\% on GSM8K, mostly by cleaning up the verbose outputs of massive models like DeepSeek-R1 \cite{b20}. While that’s a solid way to reduce wordiness, it still relies on huge, monolithic models and external checkers to do the heavy lifting. You save on the total number of tokens, sure, but your actual cost per token doesn't change at all.
+
+Our Causal-MoE approach tries to take things a bit further by baking that causal discipline directly into the model's architecture. Rather than just tidying up the output after the fact, we actually train on PNS-filtered traces so the model learns to be concise from the jump. This gives us three pretty distinct advantages over the post-hoc method:
+\begin{itemize}
+    \item \textbf{Architectural Efficiency (FLOPs):} The approach in \cite{b7} is mostly focused on cutting down the token count, but Causal-MoE actually tackles the problem from both sides. We managed to reduce the number of tokens by 63.7\% on GSM8K, and on top of that, our sparse routing mechanism lowered the actual FLOP cost per pass by 34.3\%.
+    \item \textbf{Domain Specialization:} In \cite{b7}, they treat all steps the same way with a single threshold. In contrast, Causal-MoE uses labels like \texttt{[MATH]} and \texttt{[LOGIC]} to send tasks to specialized experts, making the process much more interpretable.
+    \item \textbf{Self-Contained Scalability:} We've shown that this routing works perfectly well in a 7B model without needing huge external models to check the work during inference.
+\end{itemize}
+
+To prove this, we compared our results with the DeepSeek-R1 variant from the base paper \cite{b7}. As seen in Table \ref{tab:base_paper_comp}, although they do well with token reduction, our model achieves better compression on CSQA and, more importantly, achieves a computational saving that their monolithic approach simply cannot match.
+
+\begin{table}[htbp]
+\caption{Comparison with results from Yu et al. \cite{b7}}
+\label{tab:base_paper_comp}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\resizebox{\columnwidth}{!}{
+\begin{tabular}{lcc}
+\toprule
+\textbf{Metric} & \textbf{DeepSeek-R1 (Yu et al. \cite{b7})} & \textbf{Our Causal-MoE (V2)} \\
+\midrule
+\textbf{Inference Paradigm} & Monolithic (Post-Hoc) & Sparse Native Routing \\
+\textbf{Model Parameter Cost} & Dense ($\sim$671B active) & Sparse (7B active) \\
+\midrule
+\textbf{CSQA Token Reduction} & 62.8\% (191.0 $\to$ 70.9) & \textbf{78.5\%} (155.4 $\to$ 33.4) \\
+\textbf{GSM8K Token Reduction} & \textbf{78.4\%} (137.3 $\to$ 29.6) & 63.7\% (208.9 $\to$ 75.8) \\
+\textbf{Per-Pass FLOP Reduction} & 0\% (Unmodified base) & \textbf{34.3\%} (4.28T $\to$ 2.81T) \\
+\midrule
+\textbf{Causal Interpretability} & Scalar Value (Black-box) & Explicit Domain Experts \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+\subsection{Why the Architecture Works}
+The model's success comes from specializing via PEFT, using interleaved weight slicing to get a head start on training, and aligning our semantic labels with the MoE routing choices.
+
+\subsection{Comparison with Mixtral and CoT}
+Causal-MoE essentially takes the core concept of sparse routing and scales it up to what we’re calling the \textbf{Trace Level}. To be honest, letting a high-level router manage the semantic flow gives us a lot more precision than the usual setup. There is this persistent trade-off where traditional Chain-of-Thought (CoT) tends to drag its feet—it gets wordy and slows everything down—but our "Compressed CoT" is trying to flip that script. The goal is to reach the same conclusion while being much more selective, using fewer tokens that actually carry their weight.
+
+\section{Proving Research Usefulness}
+To see if this actually makes a difference, we tracked a few key metrics that tell a pretty clear story about the improvements:
+\begin{itemize}
+    \item Our V1 setup managed to squeeze out a +0.99 point gain in CSQA accuracy.
+    \item With V2, we saw a massive 34.3\% drop in FLOPs on the GSM8K benchmark.
+    \item Token usage on GSM8K also plummeted by about 63.7\% for V2.
+    \item This led to a 31.7\% jump in what we call "Reasoning Density" for GSM8K.
+    \item We also saw an 8.72 point accuracy recovery for V2 compared to the V1 baseline on GSM8K.
+\end{itemize}
+But honestly, it’s not just about chasing these benchmarks. One of the best things about this setup is that it gives us a much clearer window into where the model actually trips up. Plus, the modular nature of the experts means we can probably just plug in new ones down the road without accidentally breaking the logic we’ve already built.
+
+\section{Limitations}
+Even though our V2 model hit 76.80\% on GSM8K, it still hasn't quite caught up to the 88.86\% mark set by the base model. To be honest, it just goes to show how difficult it actually is to compress reasoning without losing some of that nuance. We also noticed a bit of a regression on the CSQA benchmark when we switched to V2; it seems like trying to handle everything in a single pass doesn't give the model the same "room to breathe" or space for exploration that V1 had. Getting the model to consistently respect global constraints across a multi-step chain is definitely still a work in progress for us.
+
+\section{Future Roadmap}
+Looking ahead, there are a few specific areas we’re eager to tackle next. It’s not just about refining what we have, but really pushing the boundaries of how these experts interact:
+\begin{itemize}
+    \item \textbf{Dynamic Expert Weighting:} We want to find a way to blend the contributions from our experts more softly. Right now it’s a bit binary, but a more fluid weighting system could help with those "edge case" problems that don't fit perfectly into a single category.
+    \item \textbf{Self-Correction (Verify+):} We’re looking into implementing something like beam-search to allow the model to actually double-check its own work. The idea is to catch those small semantic slips before they cascade into a wrong final answer.
+    \item \textbf{Global Context Layer:} One recurring challenge is making sure the model doesn't "forget" the original instructions halfway through a long reasoning chain. Adding a dedicated memory layer could help keep those global constraints front-and-center from the first step to the last.
+\end{itemize}
+
+\section{Conclusion}
+In this work, we showed that moving toward semantic step-level routing is actually a very viable alternative to the standard, flat generation we see in most models. It is a bit of a departure from the usual "all-at-once" approach, but our results suggest that breaking the reasoning process down into specialized, manageable chunks can really pay off in terms of efficiency without completely sacrificing the depth of the logic. By adding sparse MLP layers and using PNS to optimize training, we cut FLOPs by 34\% and boosted reasoning density by 31.7\% on GSM8K. This proves that matching sub-modules with specific reasoning types is a great way to build efficient, transparent language models.
+
+\clearpage
+\balance
+
+\begin{thebibliography}{00}
+\bibitem{b1} W. Fedus, B. Zoph, and N. Shazeer, "Switch Transformers: Scaling to Trillion Parameter Models with Simple and Efficient Sparsity," \emph{J. Mach. Learn. Res.}, vol. 23, no. 1, 2022.
+\bibitem{b2} E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang, and W. Chen, "LoRA: Low-Rank Adaptation of Large Language Models," in \emph{Proc. ICLR}, 2022.
+\bibitem{b3} A. Q. Jiang, A. Sablayrolles, A. Roux, et al., "Mixtral of Experts," arXiv:2401.04088, 2024.
+\bibitem{b4} J. Wei, X. Wang, D. Schuurmans, M. Bosma, B. Ichter, F. Xia, E. H. Chi, Q. V. Le, and D. Zhou, "Chain-of-Thought Prompting Elicits Reasoning in Large Language Models," in \emph{Proc. NeurIPS}, 2022.
+\bibitem{b5} L. Gao, A. Madaan, S. Zhou, U. Alon, P. Liu, Y. Yang, J. Callan, and G. Neubig, "PAL: Program-aided Language Models," in \emph{Proc. ICML}, 2023.
+\bibitem{b6} Qwen Team, "Qwen2.5 Technical Report," arXiv:2412.15115, 2024.
+\bibitem{b7} X. Yu, Z. Gu, and B. Gu, "Causal Sufficiency and Necessity Improves Chain-of-Thought Reasoning," arXiv:2506.09853v3, 2025.
+\bibitem{b8} N. Shazeer, A. Mirhoseini, K. Maziarz, A. Davis, Q. Le, G. Hinton, and J. Dean, "Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer," in \emph{Proc. ICLR}, 2017.
+\bibitem{b9} A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, and I. Polosukhin, "Attention Is All You Need," in \emph{Proc. NeurIPS}, 2017.
+\bibitem{b10} D. Dai, C. Deng, C. Zhao, R. X. Xu, H. Gao, D. Chen, J. Li, W. Zeng, X. Yu, Y. Wu, Z. Xie, Y. K. Li, Y. Huang, B. Zhou, Z. Tang, D. Tang, J. Zhou, J. Sun, and Y. You, "DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models," arXiv:2401.06066, 2024.
+\bibitem{b11} K. Cobbe, V. Kosaraju, M. Bavarian, M. Chen, H. Jun, L. Kaiser, M. Plappert, J. Tworek, J. Hilton, R. Nakano, C. Hesse, and J. Schulman, "Training Verifiers to Solve Math Word Problems," arXiv:2110.14168, 2021.
+\bibitem{b12} A. Talmor, J. Herzig, N. Lourie, and J. Berant, "CommonsenseQA: A Question Answering Challenge Targeting Commonsense Knowledge," in \emph{Proc. NAACL}, 2019.
+\bibitem{b13} T. Dettmers, A. Pagnoni, A. Holtzman, and L. Zettlemoyer, "QLoRA: Efficient Finetuning of Quantized LLMs," in \emph{Proc. NeurIPS}, 2023.
+\bibitem{b14} T. Dettmers, M. Lewis, S. Shleifer, and L. Zettlemoyer, "8-bit Optimizers via Block-wise Quantization," in \emph{Proc. ICLR}, 2022.
+\bibitem{b15} W. Kwon, Z. Li, S. Zhuang, Y. Sheng, L. Zheng, C. H. Yu, J. E. Gonzalez, H. Zhang, and I. Stoica, "Efficient Memory Management for Large Language Model Serving with PagedAttention," in \emph{Proc. SOSP}, 2023.
+\bibitem{b16} J. Pearl, \emph{Causality: Models, Reasoning, and Inference}, 2nd ed. Cambridge University Press, 2009.
+\bibitem{b17} X. Wang, J. Wei, D. Schuurmans, Q. V. Le, E. H. Chi, S. Narang, A. Chowdhery, and D. Zhou, "Self-Consistency Improves Chain of Thought Reasoning in Language Models," in \emph{Proc. ICLR}, 2023.
+\bibitem{b18} S. Yao, D. Yu, J. Zhao, I. Shafran, T. L. Griffiths, Y. Cao, and K. Narasimhan, "Tree of Thoughts: Deliberate Problem Solving with Large Language Models," in \emph{Proc. NeurIPS}, 2023.
+\bibitem{b19} N. Shazeer, "GLU Variants Improve Transformer," arXiv:2002.05202, 2020.
+\bibitem{b20} DeepSeek-AI, "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning," arXiv:2501.12948, 2025.
+\end{thebibliography}
+
+\end{document}

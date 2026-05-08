@@ -1,45 +1,111 @@
-# Byte-compiled / optimized / DLL files
+# ==============================================================================
+# BTP Causal MoE — .gitignore
+# ==============================================================================
+
+# ── Python ────────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
+*.pyo
+*.pyd
 .Python
-build/
-develop-eggs/
+*.egg
+*.egg-info/
 dist/
-downloads/
+build/
 eggs/
-.eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
 lib/
 lib64/
-parts/
-sdist/
-var/
-wheels/
-share/python-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
-# Virtual Environments
-.env
-.venv
-env/
+# ── Virtual environments ───────────────────────────────────────────────────────
 venv/
+.venv/
+env/
 ENV/
-env.bak/
-venv.bak/
+.env
 
-# IDE files
+# ── Jupyter ────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── OS artefacts ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.Zone.Identifier
+*:Zone.Identifier
+*:Zone.Identifier:$DATA
+*.lnk
+
+# ── IDE / Editor ───────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# We ARE tracking the data/ directory, because the user explicitly requested it
-# (Normally large files might be ignored in a standard repo)
+# ── Large binary / data files ──────────────────────────────────────────────────
+*.zip
+*.tar.gz
+*.tar.bz2
+*.gz
+*.rar
+*.7z
+
+# ── PDF references (large) ─────────────────────────────────────────────────────
+ref/*.pdf
+ref/pdf_text.txt
+future/*.pdf
+
+# ── DATA DIRECTORY — all JSONL training/inference data ─────────────────────────
+# Keep directory structure via .gitkeep files; exclude the actual datasets.
+data/raw/*.jsonl
+data/processed/*.jsonl
+data/pns_scored/*.jsonl
+data/atomic/*.jsonl
+data/combined/*.jsonl
+data/tagged/*.jsonl
+data/experts/**/*.jsonl
+data/final_compact/*.jsonl
+data/router/*.jsonl
+data/inference_base/*.jsonl
+data/inference_moe/*.jsonl
+data/inference_moe_v2/*.jsonl
+data/raw/.ipynb_checkpoints/
+data/processed/.ipynb_checkpoints/
+data/pns_scored/.ipynb_checkpoints/
+
+# ── Test result files (large inference outputs) ────────────────────────────────
+test/*.jsonl
+
+# ── Model checkpoints & weights ────────────────────────────────────────────────
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+checkpoints/
+runs/
+wandb/
+outputs/
+
+# ── LaTeX build artefacts ──────────────────────────────────────────────────────
+latex/*.aux
+latex/*.log
+latex/*.out
+latex/*.toc
+latex/*.bbl
+latex/*.blg
+latex/*.fls
+latex/*.fdb_latexmk
+latex/*.synctex.gz
+latex/_minted*/
+latex/*.pdf
+
+# ── Misc generated files ───────────────────────────────────────────────────────
+*.log
+*.tmp

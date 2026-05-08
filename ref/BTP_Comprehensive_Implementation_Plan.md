@@ -122,10 +122,11 @@ BTP_Causal_MoE/
 
 ---
 
-### Phase 5: Training (Fine-Tuning) (Week 5)
+### Phase 5: Training (Fine-Tuning) [IN PROGRESS 🚀]
 **Goal:** Train the experts to specialize using the curated Compact Tagged CoT dataset.
 
-1. **`configs/deepspeed_stage3.json`**: Enable CPU offloading and ZeRO-3 to ensure the 1.5B model + 4 duplicated FFN layers fit in VRAM.
+1. **Multi-GPU Saturation**: Use `torchrun` (Distributed Data Parallel) to distribute weights and gradients across both A100s.
+2. **DeepSpeed Optimization**: Configured with ZeRO-2/3 to manage memory for the expanded expert parameters.
 2. **`src/training/trainer.py`**:
     - Standard Next-Token prediction causal language modeling loss.
     - *Expert Load Balancing:* You must add an auxiliary loss to prevent mode collapse (e.g. all tokens secretly going to Expert 1). Ensure the router adheres to the step tags.
@@ -136,12 +137,18 @@ BTP_Causal_MoE/
 ### Phase 6: System Evaluation & Benchmarking (Week 6)
 **Goal:** Generate the absolute proof needed for the University BTP committee.
 
+**Core Evaluation Goals (The 3 Pillars of Success):**
+1. **Routing / PNS Calibration:** Compare the trained MoE's predicted PNS scores (expert routing decisions) vs. the raw `test_traces.jsonl` ground truth. This proves the router learned causality (Necessity and Sufficiency) rather than just random token routing.
+2. **Inference Efficiency (Compute/FLOPs Savings):** Compare the active parameters/FLOPs per token of the MoE vs the vanilla Qwen-7B base. This proves the MoE efficiently skips or routes easy steps to cheaper experts.
+3. **Overall Task Accuracy (Pass@1 / Pass@5):** Compare the final math/commonsense solve rate of the MoE vs the baseline. This guarantees the compute efficiency didn't degrade the core reasoning quality.
+
 1. **`src/training/metrics.py`**:
     - Implement a `FlopCounter` hook during inference to explicitly measure saved calculations when routing bypasses experts.
     - Token counting mechanism per generated answer.
+    - Compute the delta between predicted routing PNS and raw ground truth test PNS.
 2. **`scripts/5_evaluate_all.sh`**:
     - Evaluates the custom DeepSeek-CausalMoE-1.5B against the Base DeepSeek-R1-Distill-Qwen-1.5B model on `GSM8k`, `MATH-500`, and `CommonsenseQA`.
-3. **Logs Extraction**: The script MUST dump JSON logs containing `original_accuracy`, `causal_moe_accuracy`, `original_avg_tokens`, `causal_moe_avg_tokens`, and `expert_activation_counts`.
+3. **Logs Extraction**: The script MUST dump JSON logs containing `original_accuracy`, `causal_moe_accuracy`, `original_avg_tokens`, `causal_moe_avg_tokens`, `routing_pns_calibration`, and `expert_activation_counts`.
 
 ---
 

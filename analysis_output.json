@@ -1,0 +1,499 @@
+{
+  "BASE_CSQA": {
+    "accuracy": 82.06388206388206,
+    "total": 1221,
+    "avg_steps": 1.0,
+    "avg_tokens": 155.43251433251436,
+    "avg_decoding_steps": 155.43251433251436,
+    "est_total_flops": 3297643243243.244,
+    "successes": [
+      {
+        "id": 0,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 88.4,
+          "expert_out_tokens": 197.6,
+          "total_flops": 4004000000000.0,
+          "steps": 1,
+          "total_tokens": 286.0
+        },
+        "prediction_text": "To determine the correct answer, let's analyze each option in the context of a revolving door being a security measure:\n\nA: Bank - Banks often have security measures to protect against theft and unauthorized access. Revolving doors can help control who enters and exits, which is a security feature.\n\nB: Library - Libraries are generally open to the public and do not require strict security measures for entry and exit.\n\nC: Department Store - While department stores may have some security measures, revolving doors are not typically used as a primary security measure.\n\nD: Mall - Similar to department stores, malls have various security measures but revolving doors are not primarily used for security.\n\nE: New York - This is a location and not a type of establishment that would use a revolving door as a security measure.\n\nGiven this analysis, the most appropriate answer is A: bank.\n\n### A. \n\n### [A]",
+        "prediction_val": "A",
+        "ground_truth_val": "A"
+      },
+      {
+        "id": 1,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 81.9,
+          "expert_out_tokens": 153.4,
+          "total_flops": 3294200000000.0,
+          "steps": 1,
+          "total_tokens": 235.3
+        },
+        "prediction_text": "To determine the correct answer, let's analyze each option:\n\nA: Complete job - This is a common goal for people at work as they are expected to fulfill their assigned tasks and responsibilities.\n\nB: Learn from each other - While learning from colleagues can be beneficial, it is not the primary goal of work.\n\nC: Kill animals - This is not a relevant or common goal for people at work.\n\nD: Wear hats - Wearing hats is not a primary goal of work.\n\nE: Talk to each other - Although communication is important, it is not the main objective of work.\n\nConsidering the primary purpose of work, the most accurate answer is A: complete job.\n\n### [A]### [A]",
+        "prediction_val": "A",
+        "ground_truth_val": "A"
+      }
+    ],
+    "failures": [
+      {
+        "id": 4,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 79.3,
+          "expert_out_tokens": 195.0,
+          "total_flops": 3840200000000.0,
+          "steps": 1,
+          "total_tokens": 274.3
+        },
+        "prediction_text": "To determine the best option for James looking for a good place to buy farmland, let's analyze each option:\n\nA: Midwest - This is a broad region that includes several states known for agriculture, but it's not specific.\n\nB: Countryside - While farmland is often found in the countryside, this term is too general and doesn't specify the type of land or region.\n\nC: Estate - An estate typically refers to a large property, but it doesn't necessarily mean it's suitable for farming.\n\nD: Farming areas - This option directly refers to regions where farming is prevalent, making it the most specific and relevant choice for farmland.\n\nE: Illinois - While Illinois is a state with significant farmland, it's too specific and doesn't cover other potential regions.\n\nConsidering the context of the question, the most appropriate and general option that directly relates to farmland is D: farming areas.\n\n### D",
+        "prediction_val": "D",
+        "ground_truth_val": "A"
+      },
+      {
+        "id": 9,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 72.8,
+          "expert_out_tokens": 196.3,
+          "total_flops": 3767400000000.0005,
+          "steps": 1,
+          "total_tokens": 269.1
+        },
+        "prediction_text": "To determine the correct answer, let's analyze each option in the context of playing the guitar:\n\nA: cry - While some people might cry while playing guitar, it is not a typical or expected action during the act of playing.\n\nB: hear sounds - This is a result of playing the guitar, but it is not an action that people typically do while playing.\n\nC: singing - Many people do sing while playing the guitar, especially in genres like folk, blues, and rock. However, not all guitar players sing, and it is not the primary action.\n\nD: arthritis - This is a medical condition and not an action that people do while playing the guitar.\n\nE: making music - This is the primary and most typical action when playing the guitar. People play the guitar to create music.\n\nGiven the analysis, the most appropriate answer is:\n\n### E.\n\n### [E] ###",
+        "prediction_val": "E",
+        "ground_truth_val": "C"
+      }
+    ]
+  },
+  "MOE_V1_CSQA": {
+    "accuracy": 83.04668304668304,
+    "total": 1221,
+    "avg_steps": 5.131859131859132,
+    "avg_tokens": 27.14987714987713,
+    "avg_decoding_steps": 27.14987714987713,
+    "est_total_flops": 8233966830466.828,
+    "successes": [
+      {
+        "id": 0,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 542.1,
+          "expert_in_tokens": 484.90000000000003,
+          "expert_out_tokens": 31.200000000000003,
+          "total_flops": 8851700000000.0,
+          "steps": 5,
+          "total_tokens": 1058.2
+        },
+        "prediction": "[VERIFY] #### A",
+        "ground_truth": "A",
+        "trace": [
+          "[COMMONSENSE] Revolving door circular entry, multiple openings",
+          "[COMMONSENSE] Revolving doors prevent tailgating, unauthorized entry",
+          "[LOGIC] Revolving doors are security features",
+          "[LOGIC] Banks require strict security measures",
+          "[VERIFY] #### A"
+        ]
+      },
+      {
+        "id": 1,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 275.6,
+          "expert_in_tokens": 249.60000000000002,
+          "expert_out_tokens": 15.6,
+          "total_flops": 4539600000000.0,
+          "steps": 3,
+          "total_tokens": 540.8000000000001
+        },
+        "prediction": "[VERIFY] #### A",
+        "ground_truth": "A",
+        "trace": [
+          "[LOGIC] People complete jobs efficiently",
+          "[LOGIC] Work aims for efficient task completion",
+          "[VERIFY] #### A"
+        ]
+      }
+    ],
+    "failures": [
+      {
+        "id": 9,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 457.6,
+          "expert_in_tokens": 410.80000000000007,
+          "expert_out_tokens": 28.6,
+          "total_flops": 7524400000000.0,
+          "steps": 5,
+          "total_tokens": 897.0000000000001
+        },
+        "prediction": "[VERIFY] #### E",
+        "ground_truth": "C",
+        "trace": [
+          "[LOGIC] People play guitar to create music",
+          "[LOGIC] Guitar playing induces music creation",
+          "[LOGIC] Guitarists sing while playing",
+          "[LOGIC] Guitarists create music while playing",
+          "[VERIFY] #### E"
+        ]
+      },
+      {
+        "id": 10,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 347.1,
+          "expert_in_tokens": 310.7,
+          "expert_out_tokens": 19.5,
+          "total_flops": 5664100000000.0,
+          "steps": 4,
+          "total_tokens": 677.3
+        },
+        "prediction": "[VERIFY] #### A",
+        "ground_truth": "E",
+        "trace": [
+          "[LOGIC] Vinyl retracts metal gears",
+          "[LOGIC] Vinyl lacks durability, flexibility",
+          "[LOGIC] Vinyl not suited for pants",
+          "[VERIFY] #### A"
+        ]
+      }
+    ]
+  },
+  "MOE_V2_CSQA": {
+    "accuracy": 78.37837837837837,
+    "total": 1221,
+    "avg_steps": 3.8705978705978707,
+    "avg_tokens": 33.3947583947584,
+    "avg_decoding_steps": 33.3947583947584,
+    "est_total_flops": 3089387387387.387,
+    "successes": [
+      {
+        "id": "1afa02df02c908a558b4036e80242fac",
+        "is_correct": true,
+        "metrics": {
+          "total_tokens": 227,
+          "input_tokens": 192,
+          "output_tokens": 35,
+          "total_flops": 3028180000000.0,
+          "latency": 13.96554446220398,
+          "steps": 4
+        },
+        "prediction": "[COMMONSENSE] Revolving doors control entry and exit [LOGIC] Security measures prevent unauthorized access [LOGIC] Banks require security measures [VERIFY] #### A",
+        "ground_truth": "A",
+        "trace": [
+          "[COMMONSENSE] Revolving doors control entry and exit",
+          "[LOGIC] Security measures prevent unauthorized access",
+          "[LOGIC] Banks require security measures",
+          "[VERIFY] #### A"
+        ]
+      },
+      {
+        "id": "a7ab086045575bb497933726e4e6ad28",
+        "is_correct": true,
+        "metrics": {
+          "total_tokens": 200,
+          "input_tokens": 186,
+          "output_tokens": 14,
+          "total_flops": 2668000000000.0,
+          "latency": 0.9474732875823975,
+          "steps": 2
+        },
+        "prediction": "[LOGIC] Work aims task completion [VERIFY] #### A",
+        "ground_truth": "A",
+        "trace": [
+          "[LOGIC] Work aims task completion",
+          "[VERIFY] #### A"
+        ]
+      }
+    ],
+    "failures": [
+      {
+        "id": "2435de612dd69f2012b9e40d6af4ce38",
+        "is_correct": false,
+        "metrics": {
+          "total_tokens": 256,
+          "input_tokens": 189,
+          "output_tokens": 67,
+          "total_flops": 3415040000000.0,
+          "latency": 4.0208740234375,
+          "steps": 7
+        },
+        "prediction": "[COMMONSENSE] James seeks farmland purchase [COMMONSENSE] Farmland often found in rural areas [COMMONSENSE] Rural areas called countryside [COMMONSENSE] Estates not always farmland [COMMONSENSE] Farming areas have farmland [COMMONSENSE] Illinois has farmland [VERIFY] #### B",
+        "ground_truth": "A",
+        "trace": [
+          "[COMMONSENSE] James seeks farmland purchase",
+          "[COMMONSENSE] Farmland often found in rural areas",
+          "[COMMONSENSE] Rural areas called countryside",
+          "[COMMONSENSE] Estates not always farmland",
+          "[COMMONSENSE] Farming areas have farmland",
+          "[COMMONSENSE] Illinois has farmland",
+          "[VERIFY] #### B"
+        ]
+      },
+      {
+        "id": "1d24f406b6828492040b405d3f35119c",
+        "is_correct": false,
+        "metrics": {
+          "total_tokens": 231,
+          "input_tokens": 179,
+          "output_tokens": 52,
+          "total_flops": 3081540000000.0,
+          "latency": 3.1317684650421143,
+          "steps": 6
+        },
+        "prediction": "[COMMONSENSE] Guitar played by humans [LOGIC] Guitar playing requires physical activity [LOGIC] Singing accompanies guitar playing [LOGIC] Arthritis unrelated to guitar playing [LOGIC] Music creation involves guitar playing [VERIFY] #### E",
+        "ground_truth": "C",
+        "trace": [
+          "[COMMONSENSE] Guitar played by humans",
+          "[LOGIC] Guitar playing requires physical activity",
+          "[LOGIC] Singing accompanies guitar playing",
+          "[LOGIC] Arthritis unrelated to guitar playing",
+          "[LOGIC] Music creation involves guitar playing",
+          "[VERIFY] #### E"
+        ]
+      }
+    ]
+  },
+  "BASE_GSM8K": {
+    "accuracy": 88.855193328279,
+    "total": 1319,
+    "avg_steps": 1.0,
+    "avg_tokens": 208.86535253980304,
+    "avg_decoding_steps": 208.86535253980304,
+    "est_total_flops": 4275482183472.3306,
+    "successes": [
+      {
+        "id": 0,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 104.0,
+          "expert_out_tokens": 166.4,
+          "total_flops": 3785599999999.9995,
+          "steps": 1,
+          "total_tokens": 270.4
+        },
+        "prediction_text": "First, we need to determine how many eggs Janet has left after she uses some for breakfast and baking muffins for her friends.\n\n1. Janet's ducks lay 16 eggs per day.\n2. She eats 3 eggs for breakfast.\n3. She uses 4 eggs to bake muffins for her friends.\n\nSo, the total number of eggs used is:\n3 (for breakfast) + 4 (for muffins) = 7 eggs.\n\nNow, we subtract the number of eggs used from the total number of eggs laid:\n16 (total eggs) - 7 (eggs used) = 9 eggs.\n\nJanet sells the remaining 9 eggs at the farmers' market for $2 per egg. Therefore, the total amount she makes from selling the eggs is:\n9 (eggs) * $2 (per egg) = $18.\n\n### [18] ###",
+        "prediction_val": 18.0,
+        "ground_truth_val": 18.0
+      },
+      {
+        "id": 1,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 65.0,
+          "expert_out_tokens": 148.20000000000002,
+          "total_flops": 2984800000000.0,
+          "steps": 1,
+          "total_tokens": 213.20000000000002
+        },
+        "prediction_text": "To solve this problem, we need to determine the total number of bolts of fiber required to make a robe, given the quantities of blue and white fiber.\n\n1. The problem states that a robe takes 2 bolts of blue fiber.\n2. It also states that the amount of white fiber needed is half the amount of blue fiber. Therefore, the amount of white fiber needed is \\( \\frac{1}{2} \\times 2 = 1 \\) bolt.\n\nTo find the total number of bolts of fiber required, we add the bolts of blue fiber and the bolts of white fiber together:\n\n\\[ 2 \\text{ (blue)} + 1 \\text{ (white)} = 3 \\text{ bolts} \\]\n\n### [3]",
+        "prediction_val": 3.0,
+        "ground_truth_val": 3.0
+      }
+    ],
+    "failures": [
+      {
+        "id": 4,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 149.5,
+          "expert_out_tokens": 280.8,
+          "total_flops": 6024200000000.0,
+          "steps": 1,
+          "total_tokens": 430.3
+        },
+        "prediction_text": "To solve this problem, we need to determine the total amount of feed Wendi gives to her chickens in the final meal of the day.\n\nFirst, let's calculate the total amount of feed each chicken consumes in a day. Since each chicken is given 3 cups of feed in each of the three meals, the total feed per chicken per day is:\n3 cups/meal * 3 meals/day = 9 cups/day\n\nNext, we need to find out the total amount of feed given to the entire flock. Wendi has 20 chickens, so the total feed for the flock is:\n9 cups/chicken/day * 20 chickens = 180 cups/day\n\nNow, we know that Wendi gives 15 cups in the morning and 25 cups in the afternoon. So, the total feed given in the first two meals is:\n15 cups + 25 cups = 40 cups\n\nTo find out how much feed is needed for the final meal, we subtract the amount of feed given in the first two meals from the total daily feed requirement:\n180 cups/day - 40 cups = 140 cups\n\nTherefore, Wendi needs to give her chickens 140 cups of feed in the final meal of the day.\n\n### ### 140. \n\n(Note: The response was cut off, but the final number is 140.) ### 140. ###",
+        "prediction_val": 140.0,
+        "ground_truth_val": 20.0
+      },
+      {
+        "id": 8,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 143.0,
+          "expert_out_tokens": 345.8,
+          "total_flops": 6843200000000.0,
+          "steps": 1,
+          "total_tokens": 488.8
+        },
+        "prediction_text": "To solve this problem, we need to calculate the distance John travels in both directions and then find the difference between the two distances.\n\n1. **First Leg of the Trip:**\n   - John drives for 3 hours at 60 mph.\n   - Distance = Speed \u00d7 Time = 60 mph \u00d7 3 hours = 180 miles.\n\n2. **Second Leg of the Trip:**\n   - John drives for 2 hours in standstill traffic, so no distance is covered.\n   - Distance = 0 miles.\n\n3. **Third Leg of the Trip:**\n   - John drives for 0.5 hours (30 minutes) at 30 mph.\n   - Distance = Speed \u00d7 Time = 30 mph \u00d7 0.5 hours = 15 miles.\n\n4. **Fourth Leg of the Trip:**\n   - John drives for the remaining time of 4 hours - 2 hours (standstill) - 0.5 hours (30 mph) = 1.5 hours at 80 mph.\n   - Distance = Speed \u00d7 Time = 80 mph \u00d7 1.5 hours = 120 miles.\n\n5. **Total Distance Traveled:**\n   - Total distance = Distance of first leg + Distance of third leg + Distance of fourth leg\n   - Total distance = 180 miles + 15 miles + 120 miles = 315 miles.\n\n6. **Distance from Home:**\n   - John initially drove 180 miles away from home.\n   - He then drove back 315 miles.\n   - Distance from home = 180 miles - 315 miles = -135 miles.\n\nSince a negative distance doesn't make sense in this context, we interpret this as John being 135 miles past his home. However, the question asks for the distance from home, so we take the absolute value.\n\n### [135] ###",
+        "prediction_val": 135.0,
+        "ground_truth_val": 45.0
+      }
+    ]
+  },
+  "MOE_V1_GSM8K": {
+    "accuracy": 68.08188021228203,
+    "total": 1319,
+    "avg_steps": 5.323730098559515,
+    "avg_tokens": 54.9764973464746,
+    "avg_decoding_steps": 54.9764973464746,
+    "est_total_flops": 7666072782410.918,
+    "successes": [
+      {
+        "id": 0,
+        "question": "Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes muffins for her friends every day with four. She sells the remainder at the farmers' market daily for $2 per fresh duck egg. How much in dollars does she make every day at the farmers' market?",
+        "ground_truth": 18.0,
+        "prediction": 18.0,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 312,
+          "expert_in_tokens": 352,
+          "expert_out_tokens": 48,
+          "steps": 5
+        },
+        "trace": [
+          "[MATH] 16 - 3 - 4 = 9",
+          "[MATH] 9 * $2 = $18",
+          "[MATH] 9 * $2 = $18",
+          "[VERIFY] Janet has 9 fresh duck eggs left after eating and baking. She sells these at the farmers' market for $2 each, so she makes 9 * $2 = $18 every day.",
+          "[CLEANUP] #### 18\n\n### Instruction: Extract the final number from the history: [MATH] 1"
+        ]
+      },
+      {
+        "id": 1,
+        "question": "A robe takes 2 bolts of blue fiber and half that much white fiber.  How many bolts in total does it take?",
+        "ground_truth": 3.0,
+        "prediction": 3.0,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 195,
+          "expert_in_tokens": 235,
+          "expert_out_tokens": 35,
+          "steps": 4
+        },
+        "trace": [
+          "[MATH] 2 * 0.5 = 1",
+          "[MATH] 2 + 1 = 3",
+          "[MATH] 2 bolts of blue fiber + 1 bolt of white fiber = 3 bolts",
+          "[VERIFY] The total number of bolts required for the robe is 3."
+        ]
+      }
+    ],
+    "failures": [
+      {
+        "id": 2,
+        "question": "Josh decides to try flipping a house.  He buys a house for $80,000 and then puts in $50,000 in repairs.  This increased the value of the house by 150%.  How much profit did he make?",
+        "ground_truth": 70000.0,
+        "prediction": 195000.0,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 238,
+          "expert_in_tokens": 278,
+          "expert_out_tokens": 51,
+          "steps": 4
+        },
+        "trace": [
+          "[MATH] 80,000 + 50,000 = 130,000",
+          "[MATH] 130,000 * 2.5 = 325,000",
+          "[MATH] 325,000 - 130,000 = 195,000",
+          "[VERIFY] Josh's total investment was $130,000 ($80,000 + $50,000). The house's value increased by 150%, so the new value is 250% of the total investment, which is $325,000. Therefore, his profit is $325,000 - $130,000 = $195,000."
+        ]
+      },
+      {
+        "id": 5,
+        "question": "Kylar went to the store to buy glasses for his new apartment. One glass costs $5, but every second glass costs only 60% of the price. Kylar wants to buy 16 glasses. How much does he need to pay for them?",
+        "ground_truth": 64.0,
+        "prediction": 44.8,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 262,
+          "expert_in_tokens": 302,
+          "expert_out_tokens": 20,
+          "steps": 4
+        },
+        "trace": [
+          "[MATH] 16 / 2 = 8",
+          "[MATH] 8 * 0.6 = 4.8",
+          "[MATH] 8 * 5 = 40",
+          "[VERIFY] 4.8 + 40 = 44.8"
+        ]
+      }
+    ]
+  },
+  "MOE_V2_GSM8K": {
+    "accuracy": 76.80060652009098,
+    "total": 1319,
+    "avg_steps": 1.0,
+    "avg_tokens": 75.75284306292646,
+    "avg_decoding_steps": 75.75284306292646,
+    "est_total_flops": 2813974981046.247,
+    "successes": [
+      {
+        "id": 0,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 128,
+          "expert_out_tokens": 54,
+          "total_flops": 2427880000000.0,
+          "latency": 13.481127262115479,
+          "steps": 1,
+          "total_tokens": 182
+        },
+        "prediction_text": "[MATH] 16 [MATH] 16 - 3 = 13 [MATH] 13 - 4 = 9 [MATH] 9 * $2 = $18 [VERIFY] #### 18",
+        "prediction_val": 18.0,
+        "ground_truth_val": 18.0
+      },
+      {
+        "id": 1,
+        "is_correct": true,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 90,
+          "expert_out_tokens": 30,
+          "total_flops": 1600800000000.0,
+          "latency": 1.7769851684570312,
+          "steps": 1,
+          "total_tokens": 120
+        },
+        "prediction_text": "[MATH] 2 / 2 = 1 [MATH] 2 + 1 = 3 [VERIFY] #### 3",
+        "prediction_val": 3.0,
+        "ground_truth_val": 3.0
+      }
+    ],
+    "failures": [
+      {
+        "id": 2,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 121,
+          "expert_out_tokens": 94,
+          "total_flops": 2868100000000.0,
+          "latency": 5.249511480331421,
+          "steps": 1,
+          "total_tokens": 215
+        },
+        "prediction_text": "[MATH] 80,000 + 50,000 = 130,000 [MATH] 130,000 * 1.50 = 195,000 [MATH] 195,000 - 130,000 = 65,000 [VERIFY] #### 65000",
+        "prediction_val": 65000.0,
+        "ground_truth_val": 70000.0
+      },
+      {
+        "id": 8,
+        "is_correct": false,
+        "metrics": {
+          "router_tokens": 0,
+          "expert_in_tokens": 168,
+          "expert_out_tokens": 118,
+          "total_flops": 3815240000000.0,
+          "latency": 6.5538623332977295,
+          "steps": 1,
+          "total_tokens": 286
+        },
+        "prediction_text": "[MATH] 3 * 60 = 180 [MATH] 180 miles [MATH] 2 * 30 = 60 [MATH] 30 * 0.5 = 15 [MATH] 80 * 3.5 = 280 [MATH] 60 + 15 + 280 = 355 [MATH] 180 + 355 = 535 [VERIFY] #### 535",
+        "prediction_val": 535.0,
+        "ground_truth_val": 45.0
+      }
+    ]
+  }
+}
